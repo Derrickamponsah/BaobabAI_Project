@@ -1,0 +1,27 @@
+{
+  "features": [
+    "Height_m",
+    "Crown_Diameter_m",
+    "Trunk_Diameter_m",
+    "Altitude_m",
+    "height_dbh_ratio",
+    "crown_trunk_ratio",
+    "canopy_volume_proxy",
+    "trunk_slenderness",
+    "altitude_normalized",
+    "altitude_height_interaction",
+    "altitude_crown_interaction",
+    "total_parts_used",
+    "Geographic_Zone_encoded",
+    "Tree_Growth_Habitat_encoded",
+    "Topography_encoded",
+    "Soil_Texture_encoded",
+    "Farm_Cultivated_encoded",
+    "taste_attribute",
+    "medicine_use",
+    "stem_used",
+    "plant_use_count",
+    "parts_used_count",
+    "total_special_attributes"
+  ]
+}
