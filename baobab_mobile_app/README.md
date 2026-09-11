@@ -23,7 +23,7 @@ baobab_mobile_app/
 | Manual feature input | `mobile/lib/screens/manual_input_screen.dart` |
 | Image upload → deduce tree dimensions | `backend/ml/image_features.py`, `mobile/lib/screens/image_input_screen.dart` |
 | Selectable soil / location / site options | `/api/categories` + dropdowns in the manual screen |
-| Database | `backend/database/models.py` (SQLite via SQLAlchemy) |
+| Database | `backend/database/models.py` (SQLite via Postgresql) |
 | Automatic retraining from the database | `backend/ml/trainer.py`, `backend/ml/auto_retrain.py` |
 
 ---
