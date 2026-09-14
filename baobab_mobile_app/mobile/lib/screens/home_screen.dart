@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import '../services/api_service.dart';
+import '../services/compare_service.dart';
 import '../theme/app_theme.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -32,6 +33,15 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: const Text('Baobab Analysis'),
         actions: [
+          IconButton(
+            icon: Badge(
+              isLabelVisible: CompareService.instance.count > 0,
+              label: Text('${CompareService.instance.count}'),
+              child: const Icon(Icons.compare_arrows),
+            ),
+            tooltip: 'Compare trees',
+            onPressed: () => Navigator.pushNamed(context, '/compare').then((_) => setState(() {})),
+          ),
           IconButton(
             icon: const Icon(Icons.history),
             onPressed: () => Navigator.pushNamed(context, '/history'),
@@ -77,6 +87,13 @@ class _HomeScreenState extends State<HomeScreen> {
               title: 'Prediction history',
               subtitle: 'Review your previous analyses.',
               onTap: () => Navigator.pushNamed(context, '/history'),
+            ),
+            _ActionTile(
+              icon: Icons.compare_arrows,
+              color: AppTheme.secondary,
+              title: 'Compare trees',
+              subtitle: 'View up to 4 trees side-by-side.',
+              onTap: () => Navigator.pushNamed(context, '/compare').then((_) => setState(() {})),
             ),
             const SizedBox(height: 10),
             if (_status != null) _ModelStatusCard(status: _status!),

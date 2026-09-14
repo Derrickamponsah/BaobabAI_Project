@@ -3,7 +3,7 @@ app.py
 ------
 Baobab Mobile Application backend — application factory.
 
-Wires together: configuration, SQLite database, JWT auth, the model
+Wires together: configuration, PostgreSQL database, JWT auth, the model
 predictor, the prediction / image / feedback / retrain endpoints, and the
 automatic-retraining scheduler.
 

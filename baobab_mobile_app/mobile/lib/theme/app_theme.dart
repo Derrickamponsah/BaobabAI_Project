@@ -2,15 +2,15 @@ import 'package:flutter/material.dart';
 
 /// Baobab visual identity
 class AppTheme {
-  static const Color primary = Color(0xFF1B2A47); // Navy blue text/headers
-  static const Color secondary = Color(0xFF57A773);
-  static const Color accent = Color(0xFFE8A33D);
+  static const Color primary = Color(0xFF5D4037); // Deep brown text/headers
+  static const Color secondary = Color(0xFF8D6E63);
+  static const Color accent = Color(0xFFD84315); // Warm sunset orange
   static const Color danger = Color(0xFFE74C3C); // Red for "NOT SUITABLE"
   static const Color success = Color(0xFF2EBD85); // Green for "SUITABLE"
-  static const Color bg = Color(0xFFF8F9FA); // Light gray background
-  static const Color card = Colors.white;
-  static const Color textDark = Color(0xFF1B2A47);
-  static const Color textLight = Color(0xFF6C757D);
+  static const Color bg = Color(0xFFF5EFE6); // Warm, light earthy/sandy background
+  static const Color card = Color(0xFFFDFBF7); // Very light warm tint for cards
+  static const Color textDark = Color(0xFF3E2723); // Dark earthy brown
+  static const Color textLight = Color(0xFF795548); // Medium brown
 
   // Chart and category colors
   static const Color catFood = Color(0xFFF27A7A);
@@ -51,14 +51,14 @@ class AppTheme {
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: Colors.white,
+        fillColor: card,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: Color(0xFFDEE2E6)),
+          borderSide: const BorderSide(color: Color(0xFFD7CCC8)),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: Color(0xFFDEE2E6)),
+          borderSide: const BorderSide(color: Color(0xFFD7CCC8)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),

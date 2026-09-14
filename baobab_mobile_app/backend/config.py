@@ -11,7 +11,7 @@ class Config:
 
     # --- database ---
     SQLALCHEMY_DATABASE_URI = os.environ.get(
-        'BAOBAB_DATABASE_URL', 'postgresql://postgres:1234@localhost:5432/baobab')
+        'BAOBAB_DATABASE_URL', 'postgresql://postgres:1234@127.0.0.1:5432/baobab')
     SQLALCHEMY_ENGINE_OPTIONS = {
         "pool_size": 10,
         "max_overflow": 20,

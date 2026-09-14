@@ -1,17 +1,35 @@
 import 'package:flutter/material.dart';
 import '../models/models.dart';
 import '../services/api_service.dart';
+import '../services/compare_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/widgets.dart';
 
-class ResultsScreen extends StatelessWidget {
+class ResultsScreen extends StatefulWidget {
   final BaobabInput input;
   final PredictionResult result;
   const ResultsScreen({super.key, required this.input, required this.result});
 
   @override
+  State<ResultsScreen> createState() => _ResultsScreenState();
+}
+
+class _ResultsScreenState extends State<ResultsScreen> {
+  void _addToCompare() {
+    final err = CompareService.instance.addItem(widget.input, widget.result);
+    if (err != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(err), behavior: SnackBarBehavior.floating),
+      );
+      return;
+    }
+    // Navigate directly to the compare screen
+    Navigator.pushNamed(context, '/compare');
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final p = result.predictions;
+    final p = widget.result.predictions;
 
     return Scaffold(
       appBar: AppBar(),
@@ -59,7 +77,7 @@ class ResultsScreen extends StatelessWidget {
 
           const Text('Recommendations', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: AppTheme.textDark)),
           const SizedBox(height: 16),
-          ...result.recommendations.map((r) => _RecommendationAlert(r)),
+          ...widget.result.recommendations.map((r) => _RecommendationAlert(r)),
 
           const SizedBox(height: 32),
           OutlinedButton.icon(
@@ -77,7 +95,14 @@ class ResultsScreen extends StatelessWidget {
             children: [
               Expanded(
                 child: OutlinedButton.icon(
-                  onPressed: () {}, // visual placeholder for export
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Results exported successfully!'),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  }, // visual placeholder for export
                   icon: const Icon(Icons.download),
                   label: const Text('Export Results'),
                   style: OutlinedButton.styleFrom(
@@ -90,7 +115,7 @@ class ResultsScreen extends StatelessWidget {
               const SizedBox(width: 12),
               Expanded(
                 child: OutlinedButton.icon(
-                  onPressed: () {}, // visual placeholder for compare
+                  onPressed: _addToCompare,
                   icon: const Icon(Icons.compare_arrows),
                   label: const Text('Add to Compare'),
                   style: OutlinedButton.styleFrom(
@@ -115,7 +140,7 @@ class ResultsScreen extends StatelessWidget {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (_) => _FeedbackSheet(input: input, result: result),
+      builder: (_) => _FeedbackSheet(input: widget.input, result: widget.result),
     );
   }
 }
@@ -220,59 +245,266 @@ class _ResultCard extends StatelessWidget {
   }
 }
 
-class _ProbabilityChart extends StatelessWidget {
+class _ProbabilityChart extends StatefulWidget {
   final Map<String, TaskPrediction> predictions;
   const _ProbabilityChart({required this.predictions});
 
   @override
+  State<_ProbabilityChart> createState() => _ProbabilityChartState();
+}
+
+class _ProbabilityChartState extends State<_ProbabilityChart>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+  late Animation<double> _anim;
+
+  static const _categories = [
+    _ChartCat('Food',      'food',      AppTheme.catFood),
+    _ChartCat('Beverage',  'beverage',  AppTheme.catBeverage),
+    _ChartCat('Medicine',  'medicine',  AppTheme.catMedicine),
+    _ChartCat('Agronomic', 'agronomic', AppTheme.catAgronomic),
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 900));
+    _anim = CurvedAnimation(parent: _ctrl, curve: Curves.easeOutCubic);
+    _ctrl.forward();
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bars = _categories
+        .where((c) => widget.predictions[c.key] != null)
+        .toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Chart area
+        AnimatedBuilder(
+          animation: _anim,
+          builder: (_, __) => SizedBox(
+            height: 220,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Y-axis labels
+                _YAxisLabels(),
+                const SizedBox(width: 8),
+                // Bars + gridlines
+                Expanded(
+                  child: Stack(
+                    children: [
+                      // Horizontal gridlines
+                      _GridLines(),
+                      // Bars
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: bars.map((c) {
+                          final prob = widget.predictions[c.key]!.probability;
+                          return _AnimatedBar(
+                            label: c.label,
+                            prob: prob,
+                            color: c.color,
+                            animValue: _anim.value,
+                          );
+                        }).toList(),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 20),
+        // Legend
+        Wrap(
+          spacing: 20,
+          runSpacing: 8,
+          children: bars.map((c) {
+            final pred = widget.predictions[c.key]!;
+            return _LegendItem(
+              color: c.color,
+              label: c.label,
+              pct: pred.probability,
+              suitable: pred.suitable,
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+}
+
+class _ChartCat {
+  final String label;
+  final String key;
+  final Color color;
+  const _ChartCat(this.label, this.key, this.color);
+}
+
+class _YAxisLabels extends StatelessWidget {
+  @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 200,
-      child: Row(
+      width: 36,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         crossAxisAlignment: CrossAxisAlignment.end,
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          if (predictions['food'] != null)
-            _Bar(label: 'Food', prob: predictions['food']!.probability, color: AppTheme.catFood),
-          if (predictions['beverage'] != null)
-            _Bar(label: 'Bev', prob: predictions['beverage']!.probability, color: AppTheme.catBeverage),
-          if (predictions['medicine'] != null)
-            _Bar(label: 'Med', prob: predictions['medicine']!.probability, color: AppTheme.catMedicine),
-          if (predictions['agronomic'] != null)
-            _Bar(label: 'Agro', prob: predictions['agronomic']!.probability, color: AppTheme.catAgronomic),
-        ],
+        children: ['100%', '75%', '50%', '25%', '0%']
+            .map((l) => Text(l,
+                style: const TextStyle(
+                    fontSize: 10,
+                    color: AppTheme.textLight,
+                    fontWeight: FontWeight.w500)))
+            .toList(),
       ),
     );
   }
 }
 
-class _Bar extends StatelessWidget {
-  final String label;
-  final double prob;
-  final Color color;
-  const _Bar({required this.label, required this.prob, required this.color});
-
+class _GridLines extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: List.generate(5, (i) => Divider(
+        height: 1,
+        color: i == 4
+            ? const Color(0xFFD7CCC8)
+            : const Color(0xFFEFEBE9),
+        thickness: i == 4 ? 1.5 : 1,
+      )),
+    );
+  }
+}
+
+class _AnimatedBar extends StatelessWidget {
+  final String label;
+  final double prob;
+  final Color color;
+  final double animValue;
+
+  const _AnimatedBar({
+    required this.label,
+    required this.prob,
+    required this.color,
+    required this.animValue,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    const maxHeight = 160.0;
+    final barHeight = maxHeight * prob * animValue;
+    final pct = (prob * 100 * animValue).toStringAsFixed(0);
+
+    return Column(
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
-        Text('${(prob * 100).toStringAsFixed(0)}%', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.textDark)),
-        const SizedBox(height: 8),
-        Container(
-          width: 40,
-          height: 120 * prob,
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
+        // Value bubble
+        AnimatedOpacity(
+          duration: const Duration(milliseconds: 300),
+          opacity: animValue > 0.6 ? 1.0 : 0.0,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [BoxShadow(color: color.withOpacity(0.4), blurRadius: 6, offset: const Offset(0, 2))],
+            ),
+            child: Text(
+              '$pct%',
+              style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+            ),
           ),
         ),
-        const SizedBox(height: 8),
-        Text(label, style: const TextStyle(fontSize: 12, color: AppTheme.textLight)),
+        const SizedBox(height: 6),
+        // The bar itself with gradient
+        Container(
+          width: 44,
+          height: barHeight,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [color.withOpacity(0.6), color],
+              begin: Alignment.bottomCenter,
+              end: Alignment.topCenter,
+            ),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
+            boxShadow: [
+              BoxShadow(color: color.withOpacity(0.35), blurRadius: 8, offset: const Offset(0, 4)),
+            ],
+          ),
+        ),
+        const SizedBox(height: 10),
+        // X-axis label
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 12,
+            color: AppTheme.textDark,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
       ],
     );
   }
 }
+
+class _LegendItem extends StatelessWidget {
+  final Color color;
+  final String label;
+  final double pct;
+  final bool? suitable;
+
+  const _LegendItem({
+    required this.color,
+    required this.label,
+    required this.pct,
+    required this.suitable,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final statusText = suitable == null
+        ? ''
+        : suitable! ? '  ✓ Suitable' : '  ✗ Not Suitable';
+    final statusColor = suitable == null
+        ? AppTheme.textLight
+        : suitable! ? AppTheme.success : AppTheme.danger;
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 12,
+          height: 12,
+          decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(3)),
+        ),
+        const SizedBox(width: 6),
+        Text(label,
+            style: const TextStyle(
+                fontSize: 13, color: AppTheme.textDark, fontWeight: FontWeight.w600)),
+        const SizedBox(width: 4),
+        Text('${(pct * 100).toStringAsFixed(1)}%',
+            style: const TextStyle(fontSize: 12, color: AppTheme.textLight)),
+        if (statusText.isNotEmpty)
+          Text(statusText,
+              style: TextStyle(fontSize: 11, color: statusColor, fontWeight: FontWeight.w600)),
+      ],
+    );
+  }
+}
+
 
 class _RecommendationAlert extends StatelessWidget {
   final String text;

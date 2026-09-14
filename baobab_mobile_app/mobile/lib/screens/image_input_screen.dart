@@ -187,27 +187,19 @@ class _ConfidenceBanner extends StatelessWidget {
   const _ConfidenceBanner({required this.estimate});
   @override
   Widget build(BuildContext context) {
-    final low = estimate.confidence == 'low';
-    final color = low ? AppTheme.accent : AppTheme.secondary;
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.4)),
-      ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(low ? Icons.info_outline : Icons.check_circle_outline,
-              color: color),
-          const SizedBox(width: 10),
+          const Icon(Icons.info_outline, size: 16, color: Colors.black54),
+          const SizedBox(width: 8),
           Expanded(
             child: Text(
               estimate.notes.isNotEmpty
                   ? estimate.notes.join(' ')
                   : 'Dimensions estimated with ${estimate.confidence} confidence.',
-              style: const TextStyle(fontSize: 13),
+              style: const TextStyle(fontSize: 12, color: Colors.black54, fontStyle: FontStyle.italic),
             ),
           ),
         ],

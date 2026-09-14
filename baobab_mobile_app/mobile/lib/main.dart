@@ -9,6 +9,7 @@ import 'screens/home_screen.dart';
 import 'screens/manual_input_screen.dart';
 import 'screens/image_input_screen.dart';
 import 'screens/history_screen.dart';
+import 'screens/compare_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -33,6 +34,7 @@ class BaobabApp extends StatelessWidget {
         '/manual': (_) => const ManualInputScreen(),
         '/image': (_) => const ImageInputScreen(),
         '/history': (_) => const HistoryScreen(),
+        '/compare': (_) => const CompareScreen(),
       },
     );
   }
