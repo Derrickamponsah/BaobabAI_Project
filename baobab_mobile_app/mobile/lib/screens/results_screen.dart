@@ -624,6 +624,59 @@ class _FeedbackSheetState extends State<_FeedbackSheet> {
   }
 }
 
+// Human-readable feature name lookup
+const Map<String, String> _kFeatureLabels = {
+  'Height_m': 'Tree Height',
+  'Crown_Diameter_m': 'Crown Diameter',
+  'Trunk_Diameter_m': 'Trunk Diameter',
+  'Altitude_m': 'Altitude',
+  'height_dbh_ratio': 'Height-to-Trunk Ratio',
+  'crown_trunk_ratio': 'Crown-to-Trunk Ratio',
+  'canopy_volume_proxy': 'Canopy Volume',
+  'trunk_slenderness': 'Trunk Slenderness',
+  'altitude_normalized': 'Altitude (scaled)',
+  'altitude_height_interaction': 'Altitude × Height',
+  'altitude_crown_interaction': 'Altitude × Crown',
+  'total_parts_used': 'Total Parts Used',
+  'Geographic_Zone_encoded': 'Geographic Zone',
+  'Tree_Growth_Habitat_encoded': 'Tree Growth Habitat',
+  'Topography_encoded': 'Terrain Type',
+  'Soil_Texture_encoded': 'Soil Texture',
+  'Farm_Cultivated_encoded': 'Farm vs. Wild Origin',
+  'taste_attribute': 'Taste Attribute',
+  'medicine_use': 'Medicinal Use Score',
+  'stem_used': 'Stem Usage',
+  'plant_use_count': 'Plant Use Count',
+  'parts_used_count': 'Parts Used Count',
+  'total_special_attributes': 'Special Attributes',
+};
+
+const Map<String, String> _kFeatureDescriptions = {
+  'Height_m': 'How tall the tree is. Taller trees often have more developed, harvestable parts.',
+  'Crown_Diameter_m': 'Width of the leafy canopy. Wider canopies indicate healthy, productive trees.',
+  'Trunk_Diameter_m': 'Thickness of the trunk — shows age and capacity to store water and nutrients.',
+  'Altitude_m': 'Height above sea level. Affects climate, rainfall, and nutrient conditions.',
+  'height_dbh_ratio': 'Balance between height and trunk thickness — a sign of structural stability.',
+  'crown_trunk_ratio': 'How wide the canopy is relative to the trunk, indicating overall spread.',
+  'canopy_volume_proxy': 'Estimated size of the tree\'s leafy area — linked to shade and fruit yield.',
+  'trunk_slenderness': 'How slender the trunk is relative to tree height — affects stability.',
+  'altitude_normalized': 'Altitude compared to all other trees in the dataset for fair comparison.',
+  'altitude_height_interaction': 'Combined effect of both altitude and height on overall suitability.',
+  'altitude_crown_interaction': 'How altitude and canopy size together influence the tree\'s value.',
+  'total_parts_used': 'Number of tree parts (leaf, bark, root, fruit) used in traditional practice.',
+  'Geographic_Zone_encoded': 'The ecological zone (e.g., Savannah, Forest) where the tree grows.',
+  'Tree_Growth_Habitat_encoded': 'Whether the tree grows in the wild, on a farm, or in a mixed habitat.',
+  'Topography_encoded': 'Shape of the land — flat, hilly, or valley — where the tree is located.',
+  'Soil_Texture_encoded': 'Type of soil (sandy, loamy, clay) which affects nutrient availability.',
+  'Farm_Cultivated_encoded': 'Whether this is a cultivated farm tree or a naturally growing wild tree.',
+  'taste_attribute': 'Known taste (e.g., sweet, sour, bitter) of the tree\'s fruits or leaves.',
+  'medicine_use': 'A score reflecting how widely the plant is used for medicinal purposes.',
+  'stem_used': 'Whether the stem or bark is known to be used in traditional applications.',
+  'plant_use_count': 'Total number of recorded practical uses for this type of plant.',
+  'parts_used_count': 'How many distinct parts of this plant have a documented use.',
+  'total_special_attributes': 'Sum of all special agronomic, nutritional, or cultural characteristics.',
+};
+
 class _ExplainabilityCard extends StatelessWidget {
   final String title;
   final TaskPrediction pred;
@@ -634,52 +687,193 @@ class _ExplainabilityCard extends StatelessWidget {
   Widget build(BuildContext context) {
     if (pred.topFeatures.isEmpty) return const SizedBox();
 
+    // Normalize bars relative to the top feature importance
+    final maxImp = pred.topFeatures.map((f) => f.importance).reduce((a, b) => a > b ? a : b);
+
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(color: const Color(0xFFE9ECEF)),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Key Drivers: $title', style: const TextStyle(fontWeight: FontWeight.w600, color: AppTheme.textDark)),
-          const SizedBox(height: 12),
-          ...pred.topFeatures.map((f) {
-            final isPos = f.direction == 'positive';
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 8.0),
-              child: Row(
-                children: [
-                  Icon(isPos ? Icons.trending_up : Icons.trending_down,
-                      color: isPos ? AppTheme.success : AppTheme.danger, size: 16),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    flex: 2,
-                    child: Text(f.feature.replaceAll('_', ' '), overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13, color: AppTheme.textDark)),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    flex: 3,
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(2),
-                      child: LinearProgressIndicator(
-                        // Normalize importance visually by maxing out at 1.0, though SHAP values can exceed it depending on scale. We just use a log or min
-                        value: (f.importance).clamp(0.0, 1.0),
-                        backgroundColor: const Color(0xFFF1F3F5),
-                        valueColor: AlwaysStoppedAnimation<Color>(isPos ? AppTheme.success : AppTheme.danger),
-                        minHeight: 6,
+          // Header
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: AppTheme.primary.withOpacity(0.06),
+              borderRadius: const BorderRadius.only(topLeft: Radius.circular(14), topRight: Radius.circular(14)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.lightbulb_outline, color: AppTheme.primary, size: 18),
+                const SizedBox(width: 8),
+                Text(
+                  'Why this $title score?',
+                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 18, color: AppTheme.textDark),
+                ),
+              ],
+            ),
+          ),
+          // Explanation text
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+            child: Text(
+              'The AI analysed all measurements of this specific tree and identified the top factors that most influenced the $title suitability prediction:',
+              style: TextStyle(fontSize: 14.5, color: Colors.grey[600], height: 1.5),
+            ),
+          ),
+          // Legend
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 6, 16, 10),
+            child: Row(
+              children: [
+                _LegendDot(color: AppTheme.success, label: 'Boosted the score', fontSize: 13.5),
+                const SizedBox(width: 20),
+                _LegendDot(color: AppTheme.danger, label: 'Reduced the score', fontSize: 13.5),
+              ],
+            ),
+          ),
+          const Divider(height: 1, color: Color(0xFFE9ECEF)),
+          // Feature rows
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: pred.topFeatures.asMap().entries.map((entry) {
+                final rank = entry.key + 1;
+                final f = entry.value;
+                final isPos = f.direction == 'positive';
+                final barFraction = maxImp > 0 ? (f.importance / maxImp).clamp(0.0, 1.0) : 0.0;
+                final pct = (barFraction * 100).toStringAsFixed(0);
+                final label = _kFeatureLabels[f.feature] ?? f.feature.replaceAll('_', ' ');
+                final desc = _kFeatureDescriptions[f.feature] ?? 'This factor influenced the prediction.';
+                final Color color = isPos ? AppTheme.success : AppTheme.danger;
+
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 18),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Rank + name + impact badge
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Container(
+                            width: 24,
+                            height: 24,
+                            decoration: BoxDecoration(color: color.withOpacity(0.13), shape: BoxShape.circle),
+                            child: Center(
+                              child: Text('#$rank', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: color)),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              label,
+                              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: AppTheme.textDark),
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(20)),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(isPos ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded, color: color, size: 11),
+                                const SizedBox(width: 2),
+                                Text(isPos ? 'Positive' : 'Negative', style: TextStyle(fontSize: 13, color: color, fontWeight: FontWeight.w600)),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
+                      const SizedBox(height: 5),
+                      // Description
+                      Padding(
+                        padding: const EdgeInsets.only(left: 32),
+                        child: Text(desc, style: TextStyle(fontSize: 14, color: Colors.grey[600], height: 1.5)),
+                      ),
+                      const SizedBox(height: 8),
+                      // Impact bar with percentage
+                      Padding(
+                        padding: const EdgeInsets.only(left: 32),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Expanded(
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(6),
+                                child: Stack(
+                                  children: [
+                                    Container(height: 12, color: const Color(0xFFF1F3F5)),
+                                    FractionallySizedBox(
+                                      widthFactor: barFraction,
+                                      child: Container(
+                                        height: 12,
+                                        decoration: BoxDecoration(
+                                          borderRadius: BorderRadius.circular(6),
+                                          gradient: LinearGradient(
+                                            colors: [color.withOpacity(0.55), color],
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            SizedBox(
+                              width: 40,
+                              child: Text(
+                                '$pct%',
+                                textAlign: TextAlign.right,
+                                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: color),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      // Bar label
+                      Padding(
+                        padding: const EdgeInsets.only(left: 32, top: 3),
+                        child: Text(
+                          'Impact strength: $pct% ${isPos ? '(supports suitability)' : '(lowers suitability)'}',
+                          style: TextStyle(fontSize: 13, color: Colors.grey[500]),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            );
-          }),
+                );
+              }).toList(),
+            ),
+          ),
         ],
       ),
+    );
+  }
+}
+
+class _LegendDot extends StatelessWidget {
+  final Color color;
+  final String label;
+  final double fontSize;
+  const _LegendDot({required this.color, required this.label, this.fontSize = 13.5});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(width: 12, height: 12, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+        const SizedBox(width: 6),
+        Text(label, style: TextStyle(fontSize: fontSize, color: Colors.grey[700])),
+      ],
     );
   }
 }
