@@ -75,6 +75,14 @@ class _ResultsScreenState extends State<ResultsScreen> {
           ),
           const SizedBox(height: 32),
 
+          const Text('Prediction Drivers (Explainable AI)', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: AppTheme.textDark)),
+          const SizedBox(height: 16),
+          ...p.entries.map((e) => _ExplainabilityCard(
+                title: e.key.toUpperCase(),
+                pred: e.value,
+              )),
+          const SizedBox(height: 32),
+
           const Text('Recommendations', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: AppTheme.textDark)),
           const SizedBox(height: 16),
           ...widget.result.recommendations.map((r) => _RecommendationAlert(r)),
@@ -610,6 +618,66 @@ class _FeedbackSheetState extends State<_FeedbackSheet> {
             icon: _submitting ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.4)) : const Icon(Icons.send),
             label: const Text('Submit confirmation'),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ExplainabilityCard extends StatelessWidget {
+  final String title;
+  final TaskPrediction pred;
+
+  const _ExplainabilityCard({required this.title, required this.pred});
+
+  @override
+  Widget build(BuildContext context) {
+    if (pred.topFeatures.isEmpty) return const SizedBox();
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE9ECEF)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Key Drivers: $title', style: const TextStyle(fontWeight: FontWeight.w600, color: AppTheme.textDark)),
+          const SizedBox(height: 12),
+          ...pred.topFeatures.map((f) {
+            final isPos = f.direction == 'positive';
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 8.0),
+              child: Row(
+                children: [
+                  Icon(isPos ? Icons.trending_up : Icons.trending_down,
+                      color: isPos ? AppTheme.success : AppTheme.danger, size: 16),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    flex: 2,
+                    child: Text(f.feature.replaceAll('_', ' '), overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13, color: AppTheme.textDark)),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    flex: 3,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(2),
+                      child: LinearProgressIndicator(
+                        // Normalize importance visually by maxing out at 1.0, though SHAP values can exceed it depending on scale. We just use a log or min
+                        value: (f.importance).clamp(0.0, 1.0),
+                        backgroundColor: const Color(0xFFF1F3F5),
+                        valueColor: AlwaysStoppedAnimation<Color>(isPos ? AppTheme.success : AppTheme.danger),
+                        minHeight: 6,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }),
         ],
       ),
     );

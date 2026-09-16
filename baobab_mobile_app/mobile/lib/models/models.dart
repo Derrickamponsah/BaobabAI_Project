@@ -64,6 +64,24 @@ class BaobabInput {
       farmCultivated != null;
 }
 
+class FeatureImportance {
+  final String feature;
+  final double importance;
+  final String direction;
+
+  FeatureImportance({
+    required this.feature,
+    required this.importance,
+    required this.direction,
+  });
+
+  factory FeatureImportance.fromJson(Map<String, dynamic> j) => FeatureImportance(
+        feature: j['feature'],
+        importance: (j['importance'] as num).toDouble(),
+        direction: j['direction'],
+      );
+}
+
 class TaskPrediction {
   final int prediction;
   final bool? suitable;
@@ -72,6 +90,7 @@ class TaskPrediction {
   final List<double> classProbabilities;
   final double modelAccuracy;
   final String algorithm;
+  final List<FeatureImportance> topFeatures;
 
   TaskPrediction({
     required this.prediction,
@@ -81,6 +100,7 @@ class TaskPrediction {
     required this.classProbabilities,
     required this.modelAccuracy,
     required this.algorithm,
+    required this.topFeatures,
   });
 
   factory TaskPrediction.fromJson(Map<String, dynamic> j) => TaskPrediction(
@@ -92,6 +112,10 @@ class TaskPrediction {
             (j['class_probabilities'] as List).map((e) => (e as num).toDouble()).toList(),
         modelAccuracy: (j['model_accuracy'] as num).toDouble(),
         algorithm: j['algorithm'],
+        topFeatures: (j['top_features'] as List?)
+                ?.map((e) => FeatureImportance.fromJson(e))
+                .toList() ??
+            [],
       );
 }
 

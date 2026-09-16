@@ -7,6 +7,7 @@ hot-reloading after a retrain via `reload()`.
 """
 import os, json, pickle, threading
 import numpy as np
+import shap
 
 import pandas as pd
 
@@ -133,12 +134,23 @@ class Predictor:
                 self.encoders = pickle.load(f)
             with open(os.path.join(md, 'scalers.pkl'), 'rb') as f:
                 self.scalers = pickle.load(f)
-            self.models, self.metadata = {}, {}
+            self.models, self.metadata, self.explainers = {}, {}, {}
             for t in TARGETS:
                 with open(os.path.join(md, f'baobab_{t}_best_model.pkl'), 'rb') as f:
                     self.models[t] = pickle.load(f)
                 with open(os.path.join(md, f'baobab_{t}_metadata.json')) as f:
                     self.metadata[t] = json.load(f)
+                
+                # Initialize SHAP explainer
+                model = self.models[t]
+                algo = self.metadata[t]['best_model']
+                
+                if algo in ['Random Forest', 'Xgboost', 'Gradient Boosting']:
+                    self.explainers[t] = shap.TreeExplainer(model)
+                else:
+                    # Use a zero-vector (mean value after standard scaling) as background for KernelExplainer
+                    bg = np.zeros((1, len(self.features)))
+                    self.explainers[t] = shap.KernelExplainer(model.predict_proba, bg)
 
     def categories(self):
         """Valid selectable values for each categorical descriptor."""
@@ -160,6 +172,33 @@ class Predictor:
                 pred = model.predict(Xs)[0]
                 proba = model.predict_proba(Xs)[0]
                 conf = float(np.max(proba))
+                
+                # Get SHAP values
+                try:
+                    explainer = self.explainers[t]
+                    shap_vals = explainer.shap_values(Xs)
+                    if isinstance(shap_vals, list):
+                        idx = int(pred) if int(pred) < len(shap_vals) else -1
+                        vals = shap_vals[idx][0]
+                    elif len(shap_vals.shape) == 3:
+                        idx = int(pred) if int(pred) < shap_vals.shape[2] else -1
+                        vals = shap_vals[0, :, idx]
+                    else:
+                        vals = shap_vals[0]
+                    
+                    feature_importances = []
+                    for i, v in enumerate(vals):
+                        feature_importances.append({
+                            'feature': self.features[i],
+                            'importance': float(abs(v)),
+                            'direction': 'positive' if v > 0 else 'negative'
+                        })
+                    feature_importances.sort(key=lambda x: x['importance'], reverse=True)
+                    top_features = feature_importances[:3]
+                except Exception as e:
+                    print(f"SHAP Error for {t}: {e}")
+                    top_features = []
+
                 out[t] = {
                     'prediction': int(pred),
                     'suitable': bool(pred) if t != 'agronomic' else None,
@@ -168,6 +207,7 @@ class Predictor:
                     'class_probabilities': [float(p) for p in proba],
                     'model_accuracy': float(self.metadata[t]['best_accuracy']),
                     'algorithm': self.metadata[t]['best_model'],
+                    'top_features': top_features,
                 }
             return {'predictions': out, 'recommendations': self._recommend(out)}
 
