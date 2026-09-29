@@ -4,6 +4,7 @@ import '../services/api_service.dart';
 import '../services/compare_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/widgets.dart';
+import 'package:share_plus/share_plus.dart';
 
 class ResultsScreen extends StatefulWidget {
   final BaobabInput input;
@@ -15,6 +16,29 @@ class ResultsScreen extends StatefulWidget {
 }
 
 class _ResultsScreenState extends State<ResultsScreen> {
+  void _exportResults() {
+    final inData = widget.input;
+    final res = widget.result;
+
+    final buffer = StringBuffer();
+    buffer.writeln('🌳 Baobab Tree Prediction Results');
+    buffer.writeln('-----------------------------------');
+    if (inData.heightM != null) {
+      buffer.writeln('Height: ${inData.heightM}m, Crown: ${inData.crownDiameterM}m, Trunk: ${inData.trunkDiameterM}m');
+    }
+    if (inData.geographicZone != null) {
+      buffer.writeln('Zone: ${inData.geographicZone}, Habitat: ${inData.treeGrowthHabitat}');
+    }
+    buffer.writeln('-----------------------------------');
+    buffer.writeln('Predictions:');
+    res.predictions.forEach((key, value) {
+      buffer.writeln('- ${key.toUpperCase()}: ${value.prediction} (${(value.probability * 100).toStringAsFixed(1)}% confidence)');
+    });
+    buffer.writeln('-----------------------------------');
+    
+    Share.share(buffer.toString(), subject: 'Baobab Prediction Results');
+  }
+
   void _addToCompare() {
     final err = CompareService.instance.addItem(widget.input, widget.result);
     if (err != null) {
@@ -75,7 +99,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
           ),
           const SizedBox(height: 32),
 
-          const Text('Prediction Drivers (Explainable AI)', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: AppTheme.textDark)),
+          const Text('Prediction Drivers', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: AppTheme.textDark)),
           const SizedBox(height: 16),
           ...p.entries.map((e) => _ExplainabilityCard(
                 title: e.key.toUpperCase(),
@@ -103,14 +127,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
             children: [
               Expanded(
                 child: OutlinedButton.icon(
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Results exported successfully!'),
-                        behavior: SnackBarBehavior.floating,
-                      ),
-                    );
-                  }, // visual placeholder for export
+                  onPressed: _exportResults,
                   icon: const Icon(Icons.download),
                   label: const Text('Export Results'),
                   style: OutlinedButton.styleFrom(

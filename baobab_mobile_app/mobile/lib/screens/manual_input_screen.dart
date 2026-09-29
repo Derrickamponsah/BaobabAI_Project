@@ -237,7 +237,6 @@ class _ManualInputScreenState extends State<ManualInputScreen> {
                           Row(
                             children: [
                               Expanded(
-                                flex: 2,
                                 child: GradientButton(
                                   text: 'Get Prediction',
                                   icon: Icons.psychology,
@@ -246,18 +245,15 @@ class _ManualInputScreenState extends State<ManualInputScreen> {
                                 ),
                               ),
                               const SizedBox(width: 16),
-                              Expanded(
-                                flex: 1,
-                                child: SizedBox(
-                                  height: 52,
-                                  child: OutlinedButton.icon(
-                                    onPressed: _clearForm,
-                                    icon: const Icon(Icons.refresh),
-                                    label: const Text('Clear'),
-                                    style: OutlinedButton.styleFrom(
-                                      foregroundColor: AppTheme.textDark,
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                    ),
+                              SizedBox(
+                                height: 52,
+                                child: OutlinedButton.icon(
+                                  onPressed: _clearForm,
+                                  icon: const Icon(Icons.refresh),
+                                  label: const Text('Clear'),
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: AppTheme.textDark,
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                                   ),
                                 ),
                               ),

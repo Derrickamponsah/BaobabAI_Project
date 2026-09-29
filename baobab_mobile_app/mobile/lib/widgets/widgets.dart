@@ -74,7 +74,7 @@ class NumberField extends StatelessWidget {
         children: [
           Row(
             children: [
-              Text(label, style: const TextStyle(fontWeight: FontWeight.w700, color: AppTheme.textDark, fontSize: 15)),
+              Flexible(child: Text(label, style: const TextStyle(fontWeight: FontWeight.w700, color: AppTheme.textDark, fontSize: 15))),
               const Text(' * ', style: TextStyle(color: AppTheme.danger, fontWeight: FontWeight.bold)),
               const Icon(Icons.info, size: 16, color: Color(0xFF4C84FF)),
             ],

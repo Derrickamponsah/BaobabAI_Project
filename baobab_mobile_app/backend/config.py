@@ -1,7 +1,9 @@
 """Central configuration for the Baobab backend."""
 import os
+from dotenv import load_dotenv
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+load_dotenv(os.path.join(BASE_DIR, '.env.local'))
 
 
 class Config:
@@ -11,7 +13,7 @@ class Config:
 
     # --- database ---
     SQLALCHEMY_DATABASE_URI = os.environ.get(
-        'BAOBAB_DATABASE_URL', 'postgresql://postgres:1234@127.0.0.1:5432/baobab')
+        'DATABASE_URL', os.environ.get('BAOBAB_DATABASE_URL', 'postgresql://neondb_owner:npg_qumUw9yArz4Z@ep-withered-meadow-b56e35lp-pooler.c-7.us-east-2.aws.neon.tech/neondb?channel_binding=require&sslmode=require'))
     SQLALCHEMY_ENGINE_OPTIONS = {
         "pool_size": 10,
         "max_overflow": 20,

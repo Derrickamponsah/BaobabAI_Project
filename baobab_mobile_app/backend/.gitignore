@@ -4,3 +4,6 @@ __pycache__/
 baobab.db
 uploads/*
 !uploads/.gitkeep
+.neon
+.env.local
+node_modules/
