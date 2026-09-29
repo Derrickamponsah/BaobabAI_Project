@@ -22,7 +22,7 @@ class BaobabApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Baobab Tree Analysis',
+      title: 'BaobabAI',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
       initialRoute: '/',
