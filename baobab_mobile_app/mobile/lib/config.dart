@@ -5,6 +5,6 @@
 ///  * iOS simulator     -> http://127.0.0.1:5000
 ///  * Physical device   -> http://<your-computer-LAN-IP>:5000
 class AppConfig {
-  static const String apiBaseUrl = 'https://baobabai-project.onrender.com';
+  static const String apiBaseUrl = 'https://baobab-backend-1g0g.onrender.com';
   static const String apiPrefix = '$apiBaseUrl/api';
 }
